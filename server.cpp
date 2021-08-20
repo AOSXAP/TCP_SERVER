@@ -8,6 +8,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <iostream>
+#include "color_output.h"
 
 void __SETHINTS(struct addrinfo &hints){
     hints.ai_family = AF_INET; //ipv4
@@ -16,24 +17,24 @@ void __SETHINTS(struct addrinfo &hints){
     hints.ai_flags = AI_PASSIVE; //bind to the wildcard address
 }
 
-void __SENDMESSAGE(std::string message){
-    std::cout<<message<<"\n \n";
+void __SENDMESSAGE(std::string message , std::string color){
+    Color::CPRINT(color , message);
 }
 
 #define THROW() std::cout<<errno<<"\n"; return -1;
 #define INFINITE 1
 
 int main()
-{
+{   
     //prepare struct addrinfo *hints
     struct addrinfo hints, *res;
         memset(&hints, 0, sizeof(hints));
     
     __SETHINTS(hints); 
-        __SENDMESSAGE("Server started!");
+        __SENDMESSAGE("Server started!", "green");
 
     //fill res with needed info , 0 = 127.0.0.1, loopback adress
-    getaddrinfo(0 , "8080" , &hints , &res);
+    getaddrinfo("192.168.1.6" , "8080" , &hints , &res);
 
     int server_socket = socket(res->ai_family , 
                 res->ai_socktype , res->ai_protocol);
@@ -44,11 +45,11 @@ int main()
     }
 
     freeaddrinfo(res);
-        __SENDMESSAGE("Binding successful!");
+        __SENDMESSAGE("Binding successful!",  "green");
 
     //listen
     listen(server_socket , 10);
-        __SENDMESSAGE("Waiting for connections!");
+        __SENDMESSAGE("Waiting for connections!", "green");
 
     //accept incoming conections
     while(INFINITE)
@@ -60,8 +61,10 @@ int main()
                     &client_address , &client_len);
 
         if(!(client_socket >= 0)){
-            __SENDMESSAGE("Accept failed!"); THROW();
+            __SENDMESSAGE("Accept failed!", "red"); THROW();
         }
+        //ssize_t recv(int sockfd, void *buf, size_t len, int flags);
+
 
         char address_buffer[100] , request[1024];    
     
@@ -72,6 +75,12 @@ int main()
         int pid = fork();
         
         if(pid == 0){
+            close(server_socket);
+
+            recv(client_socket , request , 1024, 0);
+            
+             __SENDMESSAGE(request, "blue");
+
             send(client_socket , address_buffer , strlen(address_buffer) , 0);
                 close(client_socket); exit(0);
         }
