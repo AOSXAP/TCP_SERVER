@@ -16,68 +16,66 @@ void __SETHINTS(struct addrinfo &hints){
     hints.ai_flags = AI_PASSIVE; //bind to the wildcard address
 }
 
-#define THROW() std::cout<<errno; return -1;
+void __SENDMESSAGE(std::string message){
+    std::cout<<message<<"\n \n";
+}
 
+#define THROW() std::cout<<errno<<"\n"; return -1;
+#define INFINITE 1
 
-int main(){
+int main()
+{
     //prepare struct addrinfo *hints
-
     struct addrinfo hints, *res;
         memset(&hints, 0, sizeof(hints));
     
-    __SETHINTS(hints);
+    __SETHINTS(hints); 
+        __SENDMESSAGE("Server started!");
 
-    std::cout << "Server started!";
-
-    //fill res with needed info
-    //0 = 127.0.0.1, loopback adress
-
+    //fill res with needed info , 0 = 127.0.0.1, loopback adress
     getaddrinfo(0 , "8080" , &hints , &res);
 
     int server_socket = socket(res->ai_family , 
                 res->ai_socktype , res->ai_protocol);
 
     //do the binding 
-
     if(bind(server_socket , res -> ai_addr , res -> ai_addrlen) == -1){
         THROW();
     }
 
     freeaddrinfo(res);
+        __SENDMESSAGE("Binding successful!");
 
-    std::cout << "Binding successful \n";
     //listen
-
     listen(server_socket , 10);
-
-    std::cout << "Waiting for connections \n";
+        __SENDMESSAGE("Waiting for connections!");
 
     //accept incoming conections
+    while(INFINITE)
+    {
+        struct sockaddr_storage client_address;  //info of the connecting client
+            socklen_t client_len = sizeof(client_address);   
 
-    struct sockaddr_storage client_address;  //info of the connecting client
-        socklen_t client_len = sizeof(client_address);   
+        int client_socket = accept(server_socket, (struct sockaddr*) 
+                    &client_address , &client_len);
 
-    int client_socket = accept(server_socket , 
-            (struct sockaddr*) &client_address , &client_len);
+        if(!(client_socket >= 0)){
+            __SENDMESSAGE("Accept failed!"); THROW();
+        }
 
-    if(!(client_socket >= 0)){
-        std::cout<<"accept failed \n"; THROW();
-    }
-
-    //recive and send
-
-    char address_buffer[100] , request[1024];    
+        char address_buffer[100] , request[1024];    
     
         getnameinfo((struct sockaddr*)&client_address, client_len, address_buffer, 
             sizeof(address_buffer), 0, 0, NI_NUMERICHOST); // 1 = NI_NUMERICHOST (see hostname as IP)
-             
-    int bytes_received = recv(client_socket, request, 1024, 0);   
+
+        //create child process
+        int pid = fork();
         
-    std::cout<<request<<"\n";
+        if(pid == 0){
+            send(client_socket , address_buffer , strlen(address_buffer) , 0);
+                close(client_socket); exit(0);
+        }
 
-    int bytes_sent = send(client_socket, "<h1>Welcome to this server</h1>" , 
-        strlen("<h1>Welcome to this server</h1>"), 0);   
-
-
-    close(client_socket);
+        close(client_socket);
+    }   
 }
