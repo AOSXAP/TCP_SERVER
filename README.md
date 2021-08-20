@@ -1,5 +1,7 @@
 # TCP
 
-## Low level networking done in C++ , works only on Unix systems - MacOS , Linux!
+Low level TCP (SOCK_STREAM) IPV4 server made and tested on UNIX/UNIX-like systems (should work on Linux/MacOS ... ).
 
-### Multiplexing done using forking/child processes
+Multiplexing implemented based on C/C++ child processes (fork) 
+
+<a src="https://imgur.com/a/SeaHxL1" alt="TCP"></a>
